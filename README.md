@@ -6,8 +6,7 @@ It performs **cross-validated model training**, **ROC-AUC evaluation**, and **fe
 
  Features
 
-- Cross-validated XGBoost classification (`caret` + `xgboost`)
-- ROC curve and AUC computation (`pROC`)
-- Automatic feature importance extraction and filtering (positive-only)
-- Clean, publication-ready visualizations (`ggplot2`)
-- No hard-coded file paths or output saving — ideal for GitHub and reuse
+- Cross-validated XGBoost classification 
+- ROC curve and AUC computation
+- Automatic feature importance extraction and filtering
+- Clean, publication-ready visualizations
