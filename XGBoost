@@ -1,0 +1,68 @@
+rm(list = ls())
+library(caret)
+library(xgboost)
+library(pROC)
+library(ggplot2)
+library(gridExtra)
+x$Group <- factor(x$Group, levels = c("Positive", "Negative"))
+set.seed(123)
+train_control <- trainControl(
+  method = "cv",
+  number = 3,                 
+  classProbs = TRUE,
+  summaryFunction = twoClassSummary,
+  savePredictions = "final"
+)
+model <- train(
+  Group ~ .,
+  data = x,
+  method = "xgbTree",
+  trControl = train_control,
+  metric = "ROC",
+  tuneLength = 9                
+)
+print(model)
+print(model$results)
+pred <- model$pred
+
+roc_obj <- roc(response = pred$obs, predictor = pred$Positive)
+cat("Overall Cross-Validated AUC:", auc(roc_obj), "\n")
+
+importance <- varImp(model)
+imp_df <- as.data.frame(importance$importance)
+imp_df$Feature <- rownames(imp_df)
+
+# Keep only features with positive importance scores
+imp_df_pos <- subset(imp_df, Overall > 0)
+imp_df_pos <- imp_df_pos[order(-imp_df_pos$Overall), ]
+
+# (a) ROC Plot
+roc_plot <- ggroc(roc_obj, colour = "blue", size = 1.2) +
+  annotate("text", x = 0.4, y = 0.2,
+           label = paste("AUC =", round(auc(roc_obj), 2)),
+           size = 6, fontface = "bold") +
+  labs(x = "False Positive Rate", y = "True Positive Rate") +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text = element_text(size = 14),
+    axis.title = element_text(size = 16, face = "bold")
+  )
+
+# (b) Feature Importance Plot (Positive-Only)
+imp_plot <- ggplot(imp_df_pos,
+                   aes(x = reorder(Feature, Overall), y = Overall)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(y = "Importance Score", x = "") +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_text(size = 14, face = "bold"),
+    axis.text.x = element_text(size = 12),
+    axis.title = element_text(size = 16, face = "bold")
+  )
+grid.arrange(roc_plot, imp_plot, ncol = 2)
+
